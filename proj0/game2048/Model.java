@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author TODO: DotandLog
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -114,12 +114,87 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
+        if(side != Side.NORTH){
+            board.setViewingPerspective(side);
+        }
+
+        for(int col = 0; col < board.size(); col++){
+            boolean change = moveSingleCol(col);
+            if(change){
+                changed = true;
+            }
+        }
+
+
         checkGameOver();
         if (changed) {
             setChanged();
         }
+
+        board.setViewingPerspective(Side.NORTH);
         return changed;
     }
+
+    public boolean moveSingleCol(int col){
+        boolean moved = false;
+        int moveDistanceMax = board.size() - 1;
+
+        for(int row = board.size() - 1; row >= 0; row--){
+            Tile t = board.tile(col, row);
+            int moveDistance = getDistanceToMove(row, col, moveDistanceMax, t);
+            moveDistanceMax = updateBoard(moveDistance, col, moveDistanceMax, t);
+            if(moveDistance != row){
+                moved = true;
+            }
+        }
+        return moved;
+    }
+
+    public int getDistanceToMove(int currentRow, int col, int maxRow, Tile currentTile ){
+
+        if(currentRow == maxRow || currentTile == null){
+            return currentRow;
+        }
+
+        for(int comparedRow = currentRow + 1; comparedRow <= maxRow; comparedRow++){
+            Tile upperTile = board.tile(col, comparedRow);
+
+            if(upperTile == null){
+                continue;
+            }
+
+            if(!(upperTile.value() == currentTile.value())){
+                return comparedRow - 1;
+            }
+            else{
+                return comparedRow;
+            }
+
+
+        }
+        return  maxRow;
+    }
+
+    public int updateBoard(int row, int col, int maxRow, Tile t){
+
+        if(t == null){
+            return maxRow;
+        }
+        else {
+            boolean merged = board.move(col, row, t);
+
+            if (merged) {
+                score += updateScore(t);
+                return maxRow - 1;
+            }
+        }
+        return  maxRow;
+    }
+
+    public int updateScore(Tile t){
+        return 2 * t.value();
+    }
+
 
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
@@ -138,6 +213,14 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        for(int i = 0 ;i < b.size() ;i++ ) {
+
+            for (int j = 0; j < b.size(); j++) {
+                if ((b.tile(i, j)) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,8 +231,18 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+            for (int col = 0; col < b.size(); col++) {
+
+                for (int row = 0; row < b.size(); row++) {
+
+                    if (b.tile(col, row) != null && b.tile(col, row).value() == MAX_PIECE ) {
+                        return true;
+                    }
+                }
+            }
         return false;
     }
+
 
     /**
      * Returns true if there are any valid moves on the board.
@@ -159,6 +252,40 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        if(emptySpaceExists(b) == true){
+            return true;
+        }
+
+        for(int col = 0 ; col < b.size() ; col++){
+            for(int row = 0 ; row < b.size() ; row++){
+                if(b.tile(col , row) != null) {
+
+                    if (col != b.size() - 1 && // RIGHT Method.
+                            b.tile(col + 1, row) != null &&
+                                (b.tile(col, row)).value() == b.tile(col + 1, row).value()) {
+                        return true;
+                    }
+
+                    if (col != 0 &&  // LEFT Method.
+                            b.tile(col - 1, row) != null &&
+                                (b.tile(col, row)).value() == b.tile(col - 1, row).value()) {
+                        return true;
+                    }
+
+                    if (row != b.size() - 1 && // DOWN Method.
+                            b.tile(col, row + 1) != null &&
+                                (b.tile(col, row)).value() == b.tile(col, row + 1).value()) {
+                        return true;
+                    }
+
+                    if (row != 0 && // UP Method.
+                            b.tile(col , row - 1) != null &&
+                                (b.tile(col, row)).value() == b.tile(col, row - 1).value()) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
